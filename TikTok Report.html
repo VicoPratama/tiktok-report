@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TikTok Report</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg-page: #f8fafc;
+  --surface: #ffffff;
+  --fg: #111827;
+  --fg-muted: #6b7280;
+  --fg-subtle: #9ca3af;
+  --border: #e5e7eb;
+  --border-light: #f3f4f6;
+  --surface-hover: #f9fafb;
+  --status-green: #10b981;
+  --status-green-bg: #ecfdf5;
+  --status-green-border: #a7f3d0;
+  --status-green-text: #047857;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
+  --shadow-popover: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-page);
+  color: var(--fg);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13.5px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+button, input, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
+
+/* Minimal Top Header matching reference */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 28px;
+  display: flex;
+  align-items: center;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.header-hamburger {
+  display: flex;
+  flex-direction: column;
+  gap: 3.5px;
+  width: 16px;
+}
+
+.header-hamburger span {
+  display: block;
+  height: 2px;
+  background-color: #374151;
+  border-radius: 1px;
+}
+
+.header-divider {
+  width: 1px;
+  height: 18px;
+  background-color: var(--border);
+}
+
+.header-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--fg);
+  letter-spacing: -0.01em;
+}
+
+/* Main Container */
+main {
+  max-width: 1180px;
+  margin: 24px auto;
+  padding: 0 16px 48px;
+}
+
+/* Main Large SaaS Card */
+.report-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px 30px;
+  box-shadow: var(--shadow-card);
+}
+
+/* Top Section (Title + Status + Refresh) */
+.report-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.title-group h1 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+}
+
+.title-group p {
+  color: var(--fg-muted);
+  font-size: 13.5px;
+  margin-top: 3px;
+}
+
+.status-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.status-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--status-green-bg);
+  border: 1px solid var(--status-green-border);
+  color: var(--status-green-text);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.status-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--status-green);
+}
+
+.last-updated-text {
+  color: var(--fg-muted);
+  font-size: 12.5px;
+}
+
+.btn-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg);
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.btn-refresh:hover {
+  background: var(--surface-hover);
+}
+
+.btn-refresh svg.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Connected Accounts Row (2 Columns) */
+.accounts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+@media (max-width: 680px) {
+  .accounts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.account-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+}
+
+.account-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: #e5e7eb;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+
+.account-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.account-meta {
+  line-height: 1.3;
+}
+
+.account-handle {
+  font-weight: 700;
+  font-size: 14.5px;
+  color: var(--fg);
+}
+
+.account-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--fg-muted);
+  margin-top: 2px;
+}
+
+.account-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--status-green);
+}
+
+/* Summary Metrics (4 Cards) */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+@media (max-width: 860px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.summary-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.summary-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--border-light);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+  flex-shrink: 0;
+}
+
+.summary-details {
+  line-height: 1.25;
+}
+
+.summary-label {
+  color: var(--fg-muted);
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.summary-value {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+}
+
+/* Filter Bar */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.filter-left-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-right-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.filter-btn-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #374151;
+  transition: all 0.15s ease;
+}
+
+.filter-btn-pill:hover {
+  background: var(--surface-hover);
+  border-color: #d1d5db;
+}
+
+.filter-btn-pill .filter-name {
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.filter-btn-pill .filter-val {
+  color: var(--fg-muted);
+}
+
+.filter-btn-pill .chevron {
+  font-size: 10px;
+  color: var(--fg-subtle);
+  margin-left: 2px;
+}
+
+.btn-clear-filters {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fg-muted);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.btn-clear-filters:hover {
+  color: var(--fg);
+  text-decoration: underline;
+}
+
+.btn-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fg);
+  transition: all 0.15s ease;
+}
+
+.btn-export:hover {
+  background: var(--surface-hover);
+}
+
+.export-container {
+  position: relative;
+}
+
+.export-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-popover);
+  padding: 6px 0;
+  min-width: 220px;
+  z-index: 200;
+}
+
+.export-dropdown button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 14px;
+  text-align: left;
+  font-size: 12.5px;
+  color: var(--fg);
+  transition: background 0.1s ease;
+}
+
+.export-dropdown button:hover {
+  background: var(--surface-hover);
+}
+
+/* Active Filter Chips */
+.chips-container {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #334155;
+  font-weight: 500;
+}
+
+.filter-chip button {
+  font-size: 13px;
+  line-height: 1;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filter-chip button:hover {
+  color: #0f172a;
+}
+
+/* Table Architecture */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+}
+
+/* Column Width Percentages for Compact Layout */
+col.col-date { width: 14%; }
+col.col-page { width: 20%; }
+col.col-song { width: 16%; }
+col.col-views { width: 13%; }
+col.col-shares { width: 12%; }
+col.col-saves { width: 12%; }
+col.col-content { width: 13%; }
+
+thead {
+  background-color: #fafbfc;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  padding: 10px 14px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: 0.04em;
+  text-align: left;
+  user-select: none;
+  white-space: nowrap;
+}
+
+th.num {
+  text-align: right;
+}
+
+th.center {
+  text-align: center;
+}
+
+.th-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  width: 100%;
+}
+
+th.num .th-btn {
+  justify-content: flex-end;
+}
+
+.th-btn:hover {
+  color: var(--fg);
+}
+
+.th-btn.active {
+  color: var(--fg);
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--border-light);
+  transition: background-color 0.12s ease;
+}
+
+tbody tr:last-child {
+  border-bottom: none;
+}
+
+tbody tr:hover {
+  background-color: var(--surface-hover);
+}
+
+td {
+  padding: 12px 14px;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+td.td-date {
+  color: #4b5563;
+  font-variant-numeric: tabular-nums;
+}
+
+td.td-page {
+  font-weight: 500;
+  color: var(--fg);
+}
+
+td.td-song {
+  color: #4b5563;
+}
+
+td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+td.center {
+  text-align: center;
+}
+
+.btn-view-post {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.btn-view-post:hover {
+  background: var(--surface-hover);
+  border-color: #d1d5db;
+}
+
+/* Pagination Bar */
+.pagination-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  font-size: 12.5px;
+  color: var(--fg-muted);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.page-num-btn {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fg-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s ease;
+}
+
+.page-num-btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+
+.page-num-btn.active {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.page-num-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-ellipsis {
+  padding: 0 4px;
+  color: var(--fg-subtle);
+}
+
+/* Popover for Column Filters & Sorting */
+.popover {
+  position: absolute;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-popover);
+  padding: 10px;
+  min-width: 210px;
+  z-index: 250;
+}
+
+.popover-header {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.pop-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 12.5px;
+  border-radius: 4px;
+  text-align: left;
+  color: var(--fg);
+}
+
+.pop-btn:hover {
+  background: var(--surface-hover);
+}
+
+.pop-btn.selected {
+  font-weight: 600;
+  background: #f1f5f9;
+}
+
+.popover hr {
+  border: none;
+  border-top: 1px solid var(--border-light);
+  margin: 6px 0;
+}
+
+.popover-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.popover-row input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.pop-apply-btn {
+  background: var(--fg);
+  color: white;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 500;
+  border-radius: 4px;
+}
+
+.pop-clear-btn {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 4px 8px;
+  font-size: 11.5px;
+  font-weight: 500;
+  border-radius: 4px;
+}
+
+/* Toast Message */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: toastIn 0.2s ease-out;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-brand">
+    <div class="header-hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <div class="header-divider"></div>
+    <div class="header-title">Report</div>
+  </div>
+</header>
+
+<main>
+  <div class="report-card" id="app">
+    <!-- Rendered dynamically -->
+  </div>
+</main>
+
+<script>
+const CONFIG = {
+  apiBase: '/api',
+  pollMs: 60000
+};
+
+const AVATAR_SUMMER = './avatar_summer.png';
+const AVATAR_COASTAL = './avatar_coastal.png';
+
+const INITIAL_POSTS = [
+  {
+    "id": "post_7694005877862272278",
+    "postId": "7694005877862272278",
+    "date": "2026-10-07",
+    "page": "@summer.on.repeat1",
+    "song": "Surfin'",
+    "views": 296,
+    "shares": 0,
+    "saves": 3,
+    "tiktokUrl": "https://www.tiktok.com/@summer.on.repeat1/photo/7694005877862272278"
+  },
+  {
+    "id": "post_7693956321288228118",
+    "postId": "7693956321288228118",
+    "date": "2026-10-07",
+    "page": "@summer.on.repeat1",
+    "song": "Surfin'",
+    "views": 295,
+    "shares": 0,
+    "saves": 1,
+    "tiktokUrl": "https://www.tiktok.com/@summer.on.repeat1/video/7693956321288228118"
+  },
+  {
+    "id": "post_7694004408534764820",
+    "postId": "7694004408534764820",
+    "date": "2026-10-07",
+    "page": "@somewhere.coastal",
+    "song": "Surfin'",
+    "views": 287,
+    "shares": 0,
+    "saves": 1,
+    "tiktokUrl": "https://www.tiktok.com/@somewhere.coastal/photo/7694004408534764820"
+  },
+  {
+    "id": "post_7693959025678961972",
+    "postId": "7693959025678961972",
+    "date": "2026-10-07",
+    "page": "@somewhere.coastal",
+    "song": "Surfin'",
+    "views": 220,
+    "shares": 0,
+    "saves": 2,
+    "tiktokUrl": "https://www.tiktok.com/@somewhere.coastal/video/7693959025678961972"
+  },
+  {
+    "id": "post_7692506847256907030",
+    "postId": "7692506847256907030",
+    "date": "2026-10-04",
+    "page": "@summer.on.repeat1",
+    "song": "Surfin'",
+    "views": 707,
+    "shares": 1,
+    "saves": 5,
+    "tiktokUrl": "https://www.tiktok.com/@summer.on.repeat1/video/7692506847256907030"
+  },
+  {
+    "id": "post_7692509899254779157",
+    "postId": "7692509899254779157",
+    "date": "2026-10-04",
+    "page": "@somewhere.coastal",
+    "song": "Surfin'",
+    "views": 687,
+    "shares": 1,
+    "saves": 3,
+    "tiktokUrl": "https://www.tiktok.com/@somewhere.coastal/video/7692509899254779157"
+  },
+  {
+    "id": "post_7692128795037371670",
+    "postId": "7692128795037371670",
+    "date": "2026-10-03",
+    "page": "@summer.on.repeat1",
+    "song": "Surfin'",
+    "views": 689,
+    "shares": 0,
+    "saves": 4,
+    "tiktokUrl": "https://www.tiktok.com/@summer.on.repeat1/photo/7692128795037371670"
+  },
+  {
+    "id": "post_7692131376983837973",
+    "postId": "7692131376983837973",
+    "date": "2026-10-03",
+    "page": "@somewhere.coastal",
+    "song": "Surfin'",
+    "views": 677,
+    "shares": 0,
+    "saves": 2,
+    "tiktokUrl": "https://www.tiktok.com/@somewhere.coastal/photo/7692131376983837973"
+  },
+  {
+    "id": "post_7691745484809096470",
+    "postId": "7691745484809096470",
+    "date": "2026-10-02",
+    "page": "@summer.on.repeat1",
+    "song": "Surfin'",
+    "views": 736,
+    "shares": 0,
+    "saves": 4,
+    "tiktokUrl": "https://www.tiktok.com/@summer.on.repeat1/video/7691745484809096470"
+  },
+  {
+    "id": "post_7691748237891423509",
+    "postId": "7691748237891423509",
+    "date": "2026-10-02",
+    "page": "@somewhere.coastal",
+    "song": "Surfin'",
+    "views": 734,
+    "shares": 0,
+    "saves": 4,
+    "tiktokUrl": "https://www.tiktok.com/@somewhere.coastal/video/7691748237891423509"
+  },
+  {
+    "id": "post_7691370258166943000",
+    "postId": "7691370258166943000",
+    "date": "2026-10-01",
+    "page": "@summer.on.repeat1",
+    "song": "Surfin'",
+    "views": 750,
+    "shares": 1,
+    "saves": 6,
+    "tiktokUrl": "https://www.tiktok.com/@summer.on.repeat1/video/7691370258166943000"
+  },
+  {
+    "id": "post_7691373518054771989",
+    "postId": "7691373518054771989",
+    "date": "2026-10-01",
+    "page": "@somewhere.coastal",
+    "song": "Surfin'",
+    "views": 734,
+    "shares": 0,
+    "saves": 5,
+    "tiktokUrl": "https://www.tiktok.com/@somewhere.coastal/video/7691373518054771989"
+  },
+  {
+    "id": "post_7691002360872602902",
+    "postId": "7691002360872602902",
+    "date": "2026-09-30",
+    "page": "@summer.on.repeat1",
+    "song": "Surfin'",
+    "views": 728,
+    "shares": 0,
+    "saves": 6,
+    "tiktokUrl": "https://www.tiktok.com/@summer.on.repeat1/photo/7691002360872602902"
+  },
+  {
+    "id": "post_7691005953470106900",
+    "postId": "7691005953470106900",
+    "date": "2026-09-30",
+    "page": "@somewhere.coastal",
+    "song": "Surfin'",
+    "views": 704,
+    "shares": 0,
+    "saves": 5,
+    "tiktokUrl": "https://www.tiktok.com/@somewhere.coastal/photo/7691005953470106900"
+  },
+  {
+    "id": "post_7690638531034713366",
+    "postId": "7690638531034713366",
+    "date": "2026-09-29",
+    "page": "@summer.on.repeat1",
+    "song": "Surfin'",
+    "views": 346,
+    "shares": 0,
+    "saves": 4,
+    "tiktokUrl": "https://www.tiktok.com/@summer.on.repeat1/video/7690638531034713366"
+  },
+  {
+    "id": "post_7690642032477408533",
+    "postId": "7690642032477408533",
+    "date": "2026-09-29",
+    "page": "@somewhere.coastal",
+    "song": "Surfin'",
+    "views": 346,
+    "shares": 0,
+    "saves": 3,
+    "tiktokUrl": "https://www.tiktok.com/@somewhere.coastal/video/7690642032477408533"
+  },
+  {
+    "id": "post_7690267784013401366",
+    "postId": "7690267784013401366",
+    "date": "2026-09-28",
+    "page": "@summer.on.repeat1",
+    "song": "Surfin'",
+    "views": 335,
+    "shares": 0,
+    "saves": 3,
+    "tiktokUrl": "https://www.tiktok.com/@summer.on.repeat1/video/7690267784013401366"
+  },
+  {
+    "id": "post_7690270891233545492",
+    "postId": "7690270891233545492",
+    "date": "2026-09-28",
+    "page": "@somewhere.coastal",
+    "song": "Surfin'",
+    "views": 328,
+    "shares": 0,
+    "saves": 2,
+    "tiktokUrl": "https://www.tiktok.com/@somewhere.coastal/video/7690270891233545492"
+  }
+];
+
+const S = {
+  accounts: [
+    {
+      handle: '@summer.on.repeat1',
+      connected: true,
+      avatar: AVATAR_SUMMER
+    },
+    {
+      handle: '@somewhere.coastal',
+      connected: true,
+      avatar: AVATAR_COASTAL
+    }
+  ],
+  posts: INITIAL_POSTS,
+  at: new Date(),
+  loading: false,
+  f: {
+    from: '',
+    to: '',
+    page: '',
+    song: '',
+    rng: { views: [null, null], shares: [null, null], saves: [null, null] }
+  },
+  sort: { key: 'date', dir: 'desc' },
+  pg: 1,
+  size: 8,
+  pop: null,
+  menu: false
+};
+
+const COLS = [
+  ['date', 'DATE'],
+  ['page', 'PAGE'],
+  ['song', 'SONG'],
+  ['views', 'VIEWS'],
+  ['shares', 'SHARES'],
+  ['saves', 'SAVES'],
+  ['content', 'CONTENT']
+];
+
+const NUM_COLS = ['views', 'shares', 'saves'];
+
+const fmt = n => (n == null || n === '') ? '0' : Number(n).toLocaleString('en-US');
+const fd = iso => {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  const date = new Date(Date.UTC(+y, +m - 1, +d));
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+};
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const $ = s => document.querySelector(s);
+
+async function fetchAccounts() {
+  try {
+    const res = await fetch(CONFIG.apiBase + '/accounts');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch (e) {}
+  return S.accounts;
+}
+
+async function fetchPosts() {
+  try {
+    const res = await fetch(CONFIG.apiBase + '/posts');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch (e) {}
+  return INITIAL_POSTS;
+}
+
+async function triggerRefresh() {
+  try {
+    await fetch(CONFIG.apiBase + '/refresh', { method: 'POST' });
+  } catch (e) {}
+  const [accounts, posts] = await Promise.all([fetchAccounts(), fetchPosts()]);
+  return { accounts, posts, at: new Date() };
+}
+
+function getFilteredRows() {
+  const f = S.f;
+  return S.posts.filter(p => {
+    if (f.from && p.date < f.from) return false;
+    if (f.to && p.date > f.to) return false;
+    if (f.page && p.page !== f.page) return false;
+    if (f.song && p.song !== f.song) return false;
+    for (const k of NUM_COLS) {
+      const [min, max] = f.rng[k];
+      const val = p[k] ?? 0;
+      if (min != null && val < min) return false;
+      if (max != null && val > max) return false;
+    }
+    return true;
+  });
+}
+
+function getSortedRows(rows) {
+  const { key, dir } = S.sort;
+  const m = dir === 'asc' ? 1 : -1;
+  return rows.slice().sort((a, b) => {
+    const va = a[key];
+    const vb = b[key];
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === 'number' && typeof vb === 'number') {
+      return (va - vb) * m;
+    }
+    return String(va).localeCompare(String(vb)) * m;
+  });
+}
+
+function getFormattedTime() {
+  const d = S.at || new Date();
+  const dStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const tStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return `${dStr}, ${tStr}`;
+}
+
+function getActiveFilterChips() {
+  const f = S.f;
+  const chips = [];
+  if (f.from || f.to) {
+    let label = 'Date: ';
+    if (f.from && f.to && f.from === f.to) {
+      label += fd(f.from);
+    } else {
+      label += `${f.from ? fd(f.from) : 'start'} – ${f.to ? fd(f.to) : 'latest'}`;
+    }
+    chips.push([label, () => { f.from = ''; f.to = ''; }]);
+  }
+  if (f.page) {
+    chips.push([`Page: ${f.page}`, () => { f.page = ''; }]);
+  }
+  if (f.song) {
+    chips.push([`Song: ${f.song}`, () => { f.song = ''; }]);
+  }
+  NUM_COLS.forEach(k => {
+    const [min, max] = f.rng[k];
+    if (min != null || max != null) {
+      const cap = k.charAt(0).toUpperCase() + k.slice(1);
+      const minStr = min != null ? fmt(min) : '0';
+      const maxStr = max != null ? fmt(max) : 'any';
+      chips.push([`${cap}: ${minStr} – ${maxStr}`, () => { f.rng[k] = [null, null]; }]);
+    }
+  });
+  return chips;
+}
+
+let chipCallbacks = [];
+
+function render() {
+  const filtered = getFilteredRows();
+  const sorted = getSortedRows(filtered);
+  const totalPages = Math.max(1, Math.ceil(sorted.length / S.size));
+  if (S.pg > totalPages) S.pg = totalPages;
+
+  const startIdx = (S.pg - 1) * S.size;
+  const endIdx = startIdx + S.size;
+  const visibleRows = sorted.slice(startIdx, endIdx);
+
+  const sum = k => filtered.reduce((acc, row) => acc + (Number(row[k]) || 0), 0);
+  const songs = [...new Set(S.posts.map(p => p.song).filter(Boolean))].sort();
+  const chips = getActiveFilterChips();
+  chipCallbacks = chips.map(c => c[1]);
+
+  const appEl = $('#app');
+  if (!appEl) return;
+
+  appEl.innerHTML = `
+    <!-- Top Header inside Card -->
+    <div class="report-top">
+      <div class="title-group">
+        <h1>TikTok Report</h1>
+        <p>Real-time performance data from your connected TikTok accounts.</p>
+      </div>
+      <div class="status-controls">
+        <div class="status-live-pill">
+          <span class="status-live-dot"></span>
+          <span>Live data</span>
+        </div>
+        <span class="last-updated-text">Last updated: ${getFormattedTime()}</span>
+        <button class="btn-refresh" data-action="refresh" aria-label="Refresh data">
+          <svg class="${S.loading ? 'spin' : ''}" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          <span>${S.loading ? 'Refreshing…' : 'Refresh data'}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Connected Accounts Row -->
+    <div class="accounts-grid">
+      ${S.accounts.map(acc => `
+        <div class="account-card">
+          <div class="account-avatar">
+            <img src="${acc.handle.includes('summer') ? AVATAR_SUMMER : AVATAR_COASTAL}" alt="${esc(acc.handle)}">
+          </div>
+          <div class="account-meta">
+            <div class="account-handle">${esc(acc.handle)}</div>
+            <div class="account-status">
+              <span class="account-status-dot"></span>
+              <span>Connected</span>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- Summary Metrics -->
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-icon-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <div class="summary-details">
+          <div class="summary-label">Total Views</div>
+          <div class="summary-value">${fmt(sum('views'))}</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 14 5-5-5-5"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg>
+        </div>
+        <div class="summary-details">
+          <div class="summary-label">Total Shares</div>
+          <div class="summary-value">${fmt(sum('shares'))}</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+        </div>
+        <div class="summary-details">
+          <div class="summary-label">Total Saves</div>
+          <div class="summary-value">${fmt(sum('saves'))}</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+        <div class="summary-details">
+          <div class="summary-label">Posts Tracked</div>
+          <div class="summary-value">${fmt(filtered.length)}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <div class="filter-left-group">
+        <button class="filter-btn-pill" data-action="open-popover" data-col="date">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span class="filter-name">Date</span>
+          <span class="filter-val">${S.f.from || S.f.to ? (S.f.from ? fd(S.f.from) : 'start') + ' – ' + (S.f.to ? fd(S.f.to) : 'latest') : 'All dates'}</span>
+          <span class="chevron">▾</span>
+        </button>
+
+        <button class="filter-btn-pill" data-action="open-popover" data-col="page">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span class="filter-name">Page</span>
+          <span class="filter-val">${S.f.page || 'All accounts'}</span>
+          <span class="chevron">▾</span>
+        </button>
+
+        <button class="filter-btn-pill" data-action="open-popover" data-col="song">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <span class="filter-name">Song</span>
+          <span class="filter-val">${S.f.song || 'All songs'}</span>
+          <span class="chevron">▾</span>
+        </button>
+      </div>
+
+      <div class="filter-right-group">
+        <button class="btn-clear-filters" data-action="clear-all">Clear all filters</button>
+        <div class="export-container">
+          <button class="btn-export" data-action="toggle-export" aria-haspopup="true" aria-expanded="${S.menu}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export</span>
+            <span style="font-size:10px;margin-left:2px;">▾</span>
+          </button>
+          ${S.menu ? `
+            <div class="export-dropdown">
+              <button data-action="export-xlsx-all">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="17"/><line x1="16" y1="13" x2="8" y2="17"/></svg>
+                <span>Download Excel (All data)</span>
+              </button>
+              <button data-action="export-xlsx-filtered">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="17"/><line x1="16" y1="13" x2="8" y2="17"/></svg>
+                <span>Download Excel (Filtered data)</span>
+              </button>
+              <button data-action="export-sheets">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+                <span>Export to Google Sheets</span>
+              </button>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Chips if filters applied -->
+    ${chips.length > 0 ? `
+      <div class="chips-container">
+        ${chips.map((c, i) => `
+          <span class="filter-chip">
+            <span>${esc(c[0])}</span>
+            <button data-action="remove-chip" data-index="${i}" aria-label="Remove filter">×</button>
+          </span>
+        `).join('')}
+      </div>
+    ` : ''}
+
+    <!-- Performance Table -->
+    <div class="table-container">
+      <table>
+        <colgroup>
+          <col class="col-date">
+          <col class="col-page">
+          <col class="col-song">
+          <col class="col-views">
+          <col class="col-shares">
+          <col class="col-saves">
+          <col class="col-content">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>
+              <button class="th-btn ${S.sort.key === 'date' ? 'active' : ''}" data-action="open-popover" data-col="date">
+                <span>DATE</span>
+                <span>${S.sort.key === 'date' ? (S.sort.dir === 'asc' ? '↑' : '↓') : '↓'}</span>
+              </button>
+            </th>
+            <th>
+              <button class="th-btn ${S.sort.key === 'page' ? 'active' : ''}" data-action="open-popover" data-col="page">
+                <span>PAGE</span>
+                <span>↕</span>
+                <span style="font-size:9px;opacity:0.6;">⚚</span>
+              </button>
+            </th>
+            <th>
+              <button class="th-btn ${S.sort.key === 'song' ? 'active' : ''}" data-action="open-popover" data-col="song">
+                <span>SONG</span>
+                <span>↕</span>
+                <span style="font-size:9px;opacity:0.6;">⚚</span>
+              </button>
+            </th>
+            <th class="num">
+              <button class="th-btn ${S.sort.key === 'views' ? 'active' : ''}" data-action="open-popover" data-col="views">
+                <span>VIEWS</span>
+                <span>↕</span>
+                <span style="font-size:9px;opacity:0.6;">⚚</span>
+              </button>
+            </th>
+            <th class="num">
+              <button class="th-btn ${S.sort.key === 'shares' ? 'active' : ''}" data-action="open-popover" data-col="shares">
+                <span>SHARES</span>
+                <span>↕</span>
+                <span style="font-size:9px;opacity:0.6;">⚚</span>
+              </button>
+            </th>
+            <th class="num">
+              <button class="th-btn ${S.sort.key === 'saves' ? 'active' : ''}" data-action="open-popover" data-col="saves">
+                <span>SAVES</span>
+                <span>↕</span>
+                <span style="font-size:9px;opacity:0.6;">⚚</span>
+              </button>
+            </th>
+            <th class="center">
+              <span>CONTENT</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          ${visibleRows.map(p => `
+            <tr>
+              <td class="td-date">${fd(p.date)}</td>
+              <td class="td-page">${esc(p.page)}</td>
+              <td class="td-song" title="${esc(p.song)}">${esc(p.song || '—')}</td>
+              <td class="num">${fmt(p.views)}</td>
+              <td class="num">${fmt(p.shares)}</td>
+              <td class="num">${fmt(p.saves)}</td>
+              <td class="center">
+                <a class="btn-view-post" href="${esc(p.tiktokUrl)}" target="_blank" rel="noopener noreferrer">
+                  <span>View</span>
+                  <span>↗</span>
+                </a>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination Row -->
+    <div class="pagination-row">
+      <div>Showing ${filtered.length === 0 ? '0' : (startIdx + 1) + '–' + Math.min(endIdx, filtered.length)} of ${fmt(filtered.length)} posts</div>
+      <div class="pagination-pages">
+        <button class="page-num-btn" data-action="prev-page" ${S.pg <= 1 ? 'disabled' : ''}>&lt;</button>
+        ${renderPaginationButtons(S.pg, totalPages)}
+        <button class="page-num-btn" data-action="next-page" ${S.pg >= totalPages ? 'disabled' : ''}>&gt;</button>
+      </div>
+    </div>
+  `;
+
+  if (S.pop) {
+    drawPopover();
+  }
+}
+
+function renderPaginationButtons(current, total) {
+  const btns = [];
+  if (total <= 7) {
+    for (let i = 1; i <= total; i++) {
+      btns.push(`<button class="page-num-btn ${current === i ? 'active' : ''}" data-action="go-page" data-page="${i}">${i}</button>`);
+    }
+  } else {
+    for (let i = 1; i <= Math.min(5, total); i++) {
+      btns.push(`<button class="page-num-btn ${current === i ? 'active' : ''}" data-action="go-page" data-page="${i}">${i}</button>`);
+    }
+    if (total > 6) {
+      btns.push(`<span class="page-ellipsis">...</span>`);
+      btns.push(`<button class="page-num-btn ${current === total ? 'active' : ''}" data-action="go-page" data-page="${total}">${total}</button>`);
+    }
+  }
+  return btns.join('');
+}
+
+function drawPopover() {
+  const { col, x, y } = S.pop;
+  const oldPop = $('.popover');
+  if (oldPop) oldPop.remove();
+
+  const f = S.f;
+  let html = '';
+  const isNum = NUM_COLS.includes(col);
+
+  if (col === 'date') {
+    html = `
+      <div class="popover-header">Date Sorting & Range</div>
+      <button class="pop-btn" data-action="sort-col" data-col="date" data-dir="desc">↓ Sort newest → oldest</button>
+      <button class="pop-btn" data-action="sort-col" data-col="date" data-dir="asc">↑ Sort oldest → newest</button>
+      <hr>
+      <div style="font-size:11px;font-weight:600;color:var(--fg-muted);padding:2px 4px;">FILTER BY RANGE</div>
+      <div class="popover-row">
+        <input type="date" id="pop-date-from" value="${f.from}" aria-label="From date">
+        <input type="date" id="pop-date-to" value="${f.to}" aria-label="To date">
+      </div>
+      <div class="popover-actions">
+        <button class="pop-apply-btn" data-action="apply-pop-date">Apply</button>
+        <button class="pop-clear-btn" data-action="clear-pop-date">Clear</button>
+      </div>
+    `;
+  } else if (col === 'page') {
+    html = `
+      <div class="popover-header">Filter by Account</div>
+      <button class="pop-btn" data-action="sort-col" data-col="page" data-dir="asc">↑ Sort A → Z</button>
+      <button class="pop-btn" data-action="sort-col" data-col="page" data-dir="desc">↓ Sort Z → A</button>
+      <hr>
+      <button class="pop-btn ${!f.page ? 'selected' : ''}" data-action="pick-page" data-val="">All accounts</button>
+      ${S.accounts.map(a => `
+        <button class="pop-btn ${f.page === a.handle ? 'selected' : ''}" data-action="pick-page" data-val="${esc(a.handle)}">${esc(a.handle)}</button>
+      `).join('')}
+    `;
+  } else if (col === 'song') {
+    const songs = [...new Set(S.posts.map(p => p.song).filter(Boolean))].sort();
+    html = `
+      <div class="popover-header">Filter by Song</div>
+      <button class="pop-btn" data-action="sort-col" data-col="song" data-dir="asc">↑ Sort A → Z</button>
+      <button class="pop-btn" data-action="sort-col" data-col="song" data-dir="desc">↓ Sort Z → A</button>
+      <hr>
+      <button class="pop-btn ${!f.song ? 'selected' : ''}" data-action="pick-song" data-val="">All songs</button>
+      ${songs.map(s => `
+        <button class="pop-btn ${f.song === s ? 'selected' : ''}" data-action="pick-song" data-val="${esc(s)}">${esc(s)}</button>
+      `).join('')}
+    `;
+  } else if (isNum) {
+    const [min, max] = f.rng[col];
+    const cap = col.charAt(0).toUpperCase() + col.slice(1);
+    html = `
+      <div class="popover-header">${cap} Sorting & Range</div>
+      <button class="pop-btn" data-action="sort-col" data-col="${col}" data-dir="desc">↓ Sort highest → lowest</button>
+      <button class="pop-btn" data-action="sort-col" data-col="${col}" data-dir="asc">↑ Sort lowest → highest</button>
+      <hr>
+      <div style="font-size:11px;font-weight:600;color:var(--fg-muted);padding:2px 4px;">FILTER BY RANGE</div>
+      <div class="popover-row">
+        <input type="number" id="pop-range-min" min="0" placeholder="Min" value="${min ?? ''}">
+        <input type="number" id="pop-range-max" min="0" placeholder="Max" value="${max ?? ''}">
+      </div>
+      <div class="popover-actions">
+        <button class="pop-apply-btn" data-action="apply-pop-range" data-col="${col}">Apply</button>
+        <button class="pop-clear-btn" data-action="clear-pop-range" data-col="${col}">Clear</button>
+      </div>
+    `;
+  }
+
+  const el = document.createElement('div');
+  el.className = 'popover';
+  el.innerHTML = html;
+
+  const popWidth = 230;
+  const clampedX = Math.max(10, Math.min(x, window.innerWidth - popWidth - 10));
+  el.style.top = `${y}px`;
+  el.style.left = `${clampedX}px`;
+
+  document.body.appendChild(el);
+}
+
+function showToast(msg) {
+  const existing = $('.toast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<span>${esc(msg)}</span>`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+function exportToExcel(rows, filename) {
+  try {
+    const aoa = [
+      ['Date', 'Page', 'Song', 'Views', 'Shares', 'Saves', 'TikTok URL'],
+      ...rows.map(p => [p.date, p.page, p.song || '', p.views, p.shares, p.saves, p.tiktokUrl])
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+    rows.forEach((p, idx) => {
+      const cellRef = 'G' + (idx + 2);
+      if (ws[cellRef]) {
+        ws[cellRef].l = { Target: p.tiktokUrl, Tooltip: 'Open post on TikTok' };
+      }
+    });
+
+    ws['!cols'] = [
+      { wch: 14 },
+      { wch: 24 },
+      { wch: 20 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 65 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'TikTok Report');
+    XLSX.writeFile(wb, filename);
+    showToast(`Downloaded ${filename}`);
+  } catch (err) {
+    downloadCSV(rows, filename.replace('.xlsx', '.csv'));
+  }
+}
+
+function downloadCSV(rows, filename) {
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const header = ['Date', 'Page', 'Song', 'Views', 'Shares', 'Saves', 'TikTok URL'];
+  const lines = [
+    header.map(q).join(','),
+    ...rows.map(p => [p.date, p.page, p.song || '', p.views, p.shares, p.saves, p.tiktokUrl].map(q).join(','))
+  ];
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function loadData() {
+  S.loading = true;
+  render();
+  try {
+    const [accounts, posts] = await Promise.all([fetchAccounts(), fetchPosts()]);
+    if (accounts && accounts.length) S.accounts = accounts;
+    if (posts && posts.length) S.posts = posts;
+    S.at = new Date();
+  } catch (err) {
+    showToast('Loaded local TikTok report data.');
+  }
+  S.loading = false;
+  render();
+}
+
+document.addEventListener('click', async e => {
+  const trigger = e.target.closest('[data-action]');
+  const isInsidePop = e.target.closest('.popover');
+  const isInsideMenu = e.target.closest('.export-container');
+
+  if (!trigger && !isInsidePop && !isInsideMenu) {
+    if (S.pop || S.menu) {
+      S.pop = null;
+      S.menu = false;
+      $('.popover')?.remove();
+      render();
+    }
+    return;
+  }
+
+  if (!trigger) return;
+
+  const act = trigger.dataset.action;
+  const col = trigger.dataset.col;
+  const dir = trigger.dataset.dir;
+  const val = trigger.dataset.val;
+  const f = S.f;
+
+  if (act === 'open-popover') {
+    const rect = trigger.getBoundingClientRect();
+    if (S.pop && S.pop.col === col) {
+      S.pop = null;
+      $('.popover')?.remove();
+    } else {
+      S.pop = { col, x: rect.left, y: rect.bottom + 6 };
+      drawPopover();
+    }
+    return;
+  }
+
+  if (act === 'sort-col') {
+    S.sort = { key: col, dir };
+    S.pop = null;
+    S.pg = 1;
+  } else if (act === 'pick-page') {
+    f.page = val;
+    S.pop = null;
+    S.pg = 1;
+  } else if (act === 'pick-song') {
+    f.song = val;
+    S.pop = null;
+    S.pg = 1;
+  } else if (act === 'apply-pop-date') {
+    const fromEl = $('#pop-date-from');
+    const toEl = $('#pop-date-to');
+    f.from = fromEl ? fromEl.value : '';
+    f.to = toEl ? toEl.value : '';
+    S.pop = null;
+    S.pg = 1;
+  } else if (act === 'clear-pop-date') {
+    f.from = '';
+    f.to = '';
+    S.pop = null;
+    S.pg = 1;
+  } else if (act === 'apply-pop-range') {
+    const minEl = $('#pop-range-min');
+    const maxEl = $('#pop-range-max');
+    const minVal = minEl && minEl.value !== '' ? Number(minEl.value) : null;
+    const maxVal = maxEl && maxEl.value !== '' ? Number(maxEl.value) : null;
+    f.rng[col] = [minVal, maxVal];
+    S.pop = null;
+    S.pg = 1;
+  } else if (act === 'clear-pop-range') {
+    f.rng[col] = [null, null];
+    S.pop = null;
+    S.pg = 1;
+  } else if (act === 'remove-chip') {
+    const idx = Number(trigger.dataset.index);
+    if (chipCallbacks[idx]) chipCallbacks[idx]();
+    S.pg = 1;
+  } else if (act === 'clear-all') {
+    S.f = { from: '', to: '', page: '', song: '', rng: { views: [null, null], shares: [null, null], saves: [null, null] } };
+    S.pg = 1;
+  } else if (act === 'toggle-export') {
+    S.menu = !S.menu;
+    S.pop = null;
+    $('.popover')?.remove();
+  } else if (act === 'export-xlsx-all') {
+    S.menu = false;
+    exportToExcel(getSortedRows(S.posts), 'tiktok-report-all.xlsx');
+  } else if (act === 'export-xlsx-filtered') {
+    S.menu = false;
+    exportToExcel(getSortedRows(getFilteredRows()), 'tiktok-report-filtered.xlsx');
+  } else if (act === 'export-sheets') {
+    S.menu = false;
+    downloadCSV(getSortedRows(getFilteredRows()), 'tiktok-report-google-sheets.csv');
+    showToast('Downloaded CSV for Google Sheets.');
+  } else if (act === 'refresh') {
+    S.loading = true;
+    render();
+    const res = await triggerRefresh();
+    if (res.accounts && res.accounts.length) S.accounts = res.accounts;
+    if (res.posts && res.posts.length) S.posts = res.posts;
+    S.at = new Date();
+    S.loading = false;
+    render();
+    showToast('Data refreshed successfully!');
+    return;
+  } else if (act === 'go-page') {
+    S.pg = Number(trigger.dataset.page);
+  } else if (act === 'prev-page') {
+    if (S.pg > 1) S.pg--;
+  } else if (act === 'next-page') {
+    S.pg++;
+  }
+
+  $('.popover')?.remove();
+  render();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (S.pop || S.menu) {
+      S.pop = null;
+      S.menu = false;
+      $('.popover')?.remove();
+      render();
+    }
+  }
+});
+
+setInterval(() => {
+  if (!S.loading && !S.pop && !S.menu) {
+    loadData();
+  }
+}, CONFIG.pollMs);
+
+loadData();
+</script>
+</body>
+</html>
